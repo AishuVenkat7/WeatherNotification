@@ -113,39 +113,7 @@ var Publisher = (function(){
 		}
 	}
 
-	//sends
-	function Advertise_Topic(incident){
-        $currentElement = $(incident.target)
-        $pub = $currentElement.closest('.publisher');
-        name = $pub.find('h5').html();
-        TopicName = $pub.find('input')[0].value;
-        Details = $pub.find('textarea')[0].value;
-
-		section = {
-			'name':name,
-			'TopicName': TopicName,
-			'Details': Details
-		};
-
-		pubs = publishers_array.map(function(publisher){
-			return publisher.name;
-		});
-
-		pos = pubs.indexOf(section.name);
-
-		publishers_array[pos].Tweets = publishers_array[pos].Tweets || []
-
-		publishers_array[pos].Tweets.push({
-			'TopicName':TopicName,
-			'Details':Details
-		});
-
-		_render();
-
-		incidents.change('notify', section)
-	}
-
-
+	
 //publishes a topic of interest.
 	function Publish_Topic(incident){
         $currentElement = $(incident.target)
