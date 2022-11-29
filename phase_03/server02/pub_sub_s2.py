@@ -225,7 +225,7 @@ def publish(topic, event, city, indicator):
                         generatedEvents.setdefault(name, []).append(event)
                     flags[name] = 1
 
-    t = Timer(150, getCity)
+    t = Timer(40, getCity)
     t.start()
 
 
@@ -259,7 +259,7 @@ def Main():
     print("Socket is now listening for new connection ...")
 
     # getCity() will be called in a new thread after 150 seconds
-    t = Timer(150, getCity)
+    t = Timer(40, getCity)
     t.start()
 
     # connecting with master server
