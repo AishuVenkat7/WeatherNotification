@@ -3,6 +3,7 @@ import sys
 import random
 import os
 import json
+from datetime import datetime
 
 from _thread import *
 from threading import Timer
@@ -55,6 +56,14 @@ mapping = {
     "Dallas": DallasDetails
 }
 
+counter = 0
+latestTime = 0
+
+def tick(latestTime, requestTime):
+        latestTime = max(int(latestTime), int(requestTime))
+        latestTime = latestTime + 1
+        return latestTime
+
 
 # { subscriberName : [msg1, msg2,, ] , ... }
 generatedEvents = dict()
@@ -64,23 +73,27 @@ flags = dict()
 # Handle any client's connection
 
 
-def threadedClient(connection, name):
+def threadedClient(connection, name, counter):
+
+    
     while True:
         flags[name] = 0
         subscribe(name)  # Generate subscription for the connected subscriber
         subscriptionInfo = 'Your subscriptions are : ' + \
             str(subscriptions[name])
         connection.send(subscriptionInfo.encode())
+        val = str(counter) + ' '
+        connection.send(val.encode())  #sending lamport timestamp
 
         while True:
             if flags[name] == 1:
-                notify(connection, name)
+                notify(connection, name, val)
     connection.close()
 
 
 # Handle other server's connection
 
-def threadedServerSender(connection, name):
+def threadedServerSender(connection, name, counter):
     while True:
         flags[name] = 0
         # Other server's  are subscribed to the all topics of this server
@@ -88,16 +101,30 @@ def threadedServerSender(connection, name):
         subscriptionInfo = 'Your subscriptions are : ' + \
             str(subscriptions[name])
         connection.send(subscriptionInfo.encode())
-
+        val = str(counter) + ' '
+        connection.send(val.encode())  #sending lamport timestamp
         while True:
             if flags[name] == 1:
-                notify(connection, name)
+                notify(connection, name, val)
     connection.close()
 
 
 def threadedServerReceiver(connection, jsonData):
     while True:
         serverData = connection.recv(2048).decode()
+        buf = ''
+        #converting the timestamp to int
+        try:
+            while ' ' not in buf:
+                buf += connection.recv(2048).decode()
+                counter = int(buf)
+        except ValueError:
+            counter = counter + 1
+        # Getting the current date and time
+        dt = datetime.now()
+        counter = tick(latestTime, counter)
+        print("Timestamp-",dt, " Lamport timestamp -", counter)
+
         m = serverData.split('-')
         if len(m) == 3:
             city = m[0]
@@ -172,11 +199,12 @@ def publish(topic, event, city, indicator):
     t.start()
 
 
-def notify(connection, name):
+def notify(connection, name, val):
     if name in generatedEvents.keys():
         for msg in generatedEvents[name]:
             msg = msg  # + str("\n")
-            connection.send(msg.encode())
+            connection.send(msg.encode())  #sending the weather msg
+            connection.send(val.encode())  #sending lamport timestamp
         del generatedEvents[name]
         flags[name] = 0
 
@@ -222,19 +250,25 @@ def Main():
             jsonData = None
             jsonData = json.loads(clientData)
             data = jsonData['subscriberName']
+            counter = jsonData['counter']
         except ValueError as err:
             data = clientData
 
         print("data ", data)
+
+        # Getting the current date and time
+        dt = datetime.now()
+        counter = tick(latestTime, counter)
+        print("Timestamp-",dt, " Lamport timestamp -", counter)
 
         if data:
             print("Welcome ", data)
         l = data.split('-')
         if l[0] == 'c':
             clientList.append(l[1])
-            start_new_thread(threadedClient, (connection, l[1]))
+            start_new_thread(threadedClient, (connection, l[1], counter))
         if l[0] == 's':
-            start_new_thread(threadedServerSender, (connection, l[1]))
+            start_new_thread(threadedServerSender, (connection, l[1], counter))
             start_new_thread(threadedServerReceiver, (connection, jsonData))
 
     s.close()

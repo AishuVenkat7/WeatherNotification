@@ -3,6 +3,7 @@ import sys
 import random
 import os
 import json
+from datetime import datetime
 
 from _thread import *
 from threading import Timer
@@ -40,6 +41,13 @@ mapping = {
     "Dallas": DallasDetails
 }
 
+counter = 0
+latestTime = 0
+
+def tick(latestTime, requestTime):
+        latestTime = max(int(latestTime), int(requestTime))
+        latestTime = latestTime + 1
+        return latestTime
 
 # { subscriberName : [msg1, msg2,, ] , ... }
 generatedEvents = dict()
@@ -49,17 +57,18 @@ flags = dict()
 # Handle any client's connection
 
 
-def threadedClient(connection, name):
+def threadedClient(connection, name, counter):
     while True:
         flags[name] = 0
         subscribe(name)  # Generate subscription for the connected subscriber
         subscriptionInfo = 'Your subscriptions are : ' + \
             str(subscriptions[name])
         connection.send(subscriptionInfo.encode())
-
+        val = str(counter) + ' '
+        connection.send(val.encode())
         while True:
             if flags[name] == 1:
-                notify(connection, name)
+                notify(connection, name, val)
 
     connection.close()
 
@@ -67,7 +76,7 @@ def threadedClient(connection, name):
 # Handle other server's connection
 
 # Send to other servers
-def threadedServerSender(connection, name):
+def threadedServerSender(connection, name, counter):
     while True:
         flags[name] = 0
         # Other server's  are subscribed to the all topics of this server
@@ -75,10 +84,11 @@ def threadedServerSender(connection, name):
         subscriptionInfo = 'Your subscriptions are : ' + \
             str(subscriptions[name])
         connection.send(subscriptionInfo.encode())
-
+        val = str(counter) + ' '
+        connection.send(val.encode())
         while True:
             if flags[name] == 1:
-                notify(connection, name)
+                notify(connection, name, val)
     connection.close()
 
 
@@ -86,6 +96,18 @@ def threadedServerSender(connection, name):
 def threadedServerReceiver(connection, data):
     while True:
         serverData = connection.recv(2048).decode()
+        buf = ''
+        try:
+            while ' ' not in buf:
+                buf += connection.recv(2048).decode()
+                counter = int(buf)
+        except ValueError:
+            counter = counter + 1
+        # Getting the current date and time
+        dt = datetime.now()
+        counter = tick(latestTime, counter)
+        print("Timestamp-",dt, " Lamport timestamp -", counter)
+
         m = serverData.split('-')
         if len(m) == 3:
             city = m[0]
@@ -96,7 +118,7 @@ def threadedServerReceiver(connection, data):
 
 
 # Send to master server
-def threadedMasterSender(ss):
+def threadedMasterSender(ss, counter):
     while True:
         flags['master'] = 0
         # Other server's  are subscribed to the all topics of this server
@@ -104,10 +126,12 @@ def threadedMasterSender(ss):
         subscriptionInfo = 'Your subscriptions are : ' + \
             str(subscriptions['master'])
         ss.send(subscriptionInfo.encode())
+        val = str(counter) + ' '
+        ss.send(val.encode())
 
         while True:
             if flags['master'] == 1:
-                notify(ss, 'master')
+                notify(ss, 'master', val)
     ss.close()
 
 # Receive from master server
@@ -116,6 +140,18 @@ def threadedMasterSender(ss):
 def threadedMasterReceiver(ss):
     while True:
         serverData = ss.recv(2048).decode()
+        buf = ''
+        try:
+            while ' ' not in buf:
+                buf += ss.recv(2048).decode()
+                counter = int(buf)
+        except ValueError:
+            counter = counter + 1
+        # Getting the current date and time
+        dt = datetime.now()
+        counter = tick(latestTime,counter)
+        print("Timestamp-",dt, " Lamport timestamp -", counter)
+
         if serverData:
             print("Received from MASTER :", serverData)
             p = serverData.split('-')
@@ -193,11 +229,12 @@ def publish(topic, event, city, indicator):
     t.start()
 
 
-def notify(connection, name):
+def notify(connection, name, val):
     if name in generatedEvents.keys():
         for msg in generatedEvents[name]:
             msg = msg  # + str("\n")
             connection.send(msg.encode())
+            connection.send(val.encode())
         del generatedEvents[name]
         flags[name] = 0
 
@@ -238,8 +275,13 @@ def Main():
     ss.connect((master_host, master_port))
     ss.send(serverName.encode())
 
+    # Getting the current date and time
+    dt = datetime.now()
+    counter = tick(latestTime, 0)
+    print("Timestamp-",dt, " Lamport timestamp -", counter)
+
     start_new_thread(threadedMasterReceiver, (ss,))
-    start_new_thread(threadedMasterSender, (ss,))
+    start_new_thread(threadedMasterSender, (ss, counter))
 
     # An infinity loop - server will be up for infinity and beyond
     while True:
@@ -256,6 +298,13 @@ def Main():
         # convert string to dict
         data = json.loads(clientData)
 
+        counter = data['counter']
+        # Getting the current date and time
+        dt = datetime.now()
+        counter = tick(latestTime, counter)
+        print("Timestamp-",dt, " Lamport timestamp -", counter)
+
+
         if data:
             print("Welcome ", data['subscriberName'])
 
@@ -263,9 +312,9 @@ def Main():
 
         if l[0] == 'c':
             clientList.append(l[1])
-            start_new_thread(threadedClient, (connection, l[1]))
+            start_new_thread(threadedClient, (connection, l[1], counter))
         if l[0] == 's':
-            start_new_thread(threadedServerSender, (connection, l[1]))
+            start_new_thread(threadedServerSender, (connection, l[1], counter))
             start_new_thread(threadedServerReceiver, (connection, data))
 
     s.close()
