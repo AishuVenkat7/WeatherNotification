@@ -79,7 +79,7 @@ def threadedClient(connection, name, counter):
     while True:
         flags[name] = 0
         subscribe(name)  # Generate subscription for the connected subscriber
-        subscriptionInfo = 'Your subscriptions are : ' + \
+        subscriptionInfo = 'Your subscriptions are: ' + \
             str(subscriptions[name])
         connection.send(subscriptionInfo.encode())
         val = str(counter) + ' '
@@ -98,7 +98,7 @@ def threadedServerSender(connection, name, counter):
         flags[name] = 0
         # Other server's  are subscribed to the all topics of this server
         subscriptions[name] = topics
-        subscriptionInfo = 'Your subscriptions are : ' + \
+        subscriptionInfo = 'Your subscriptions are: ' + \
             str(subscriptions[name])
         connection.send(subscriptionInfo.encode())
         val = str(counter) + ' '
@@ -122,8 +122,8 @@ def threadedServerReceiver(connection, jsonData):
             counter = counter + 1
         # Getting the current date and time
         dt = datetime.now()
-        counter = tick(latestTime, counter)
-        print("Timestamp-",dt, " Lamport timestamp -", counter)
+        counter_flag = tick(latestTime, counter)
+        print("Timestamp: ",dt, " Lamport timestamp: ", counter_flag)
 
         m = serverData.split('-')
         if len(m) == 3:
@@ -161,7 +161,7 @@ def eventGenerator(city):
             topic = random.choice(topics)
             map = mapping[i]
             msgList = map[topic]
-            print("This is msg: ", msgList)
+            print("Message: ", msgList)
             event = msgList[random.choice(list(range(1, len(msgList))))]
 
     # call publish() for publishing the new event
@@ -195,7 +195,7 @@ def publish(topic, event, city, indicator):
                         generatedEvents.setdefault(name, []).append(event)
                     flags[name] = 1
 
-    t = Timer(100, getCity)
+    t = Timer(30, getCity)
     t.start()
 
 
@@ -222,30 +222,30 @@ def Main():
 
     s.bind((host, port))  # Binding the socket object to a port
 
-    print("Socket is bind to the port :", port)
+    print("Socket is bind to the port: ", port)
 
     s.listen(5)  # Socket is now listening to the port for new connection with 'backlog' parameter value 5. It defines the length of queue for pending connections
 
     print("Socket is now listening for new connection ...")
 
     # getCity() will be called in a new thread after 100 seconds
-    t = Timer(100, getCity)
+    t = Timer(30, getCity)
     t.start()
 
     # An infinity loop - server will be up for infinity and beyond
     while True:
 
         connection, addr = s.accept()  # Waiting for new connection to be accepted
-        print('Connected to :', addr[0], ':', addr[1])
-        print("Connection string is", connection)
+        print('Connected to: ', addr[0], ':', addr[1])
+        print("Connection string is: ", connection)
 
         # Receive data (c-name or s-name) from new connection and determine if it is a client or other server
         # c means client and name is the name of the client
-        # s maens server and name is the name of the server
+        # s means server and name is the name of the server
         clientData = connection.recv(2048).decode()
 
         # convert string to dict
-        print("clientdata ", clientData)
+        print("Received data: ", clientData)
         try:
             jsonData = None
             jsonData = json.loads(clientData)
@@ -254,12 +254,12 @@ def Main():
         except ValueError as err:
             data = clientData
 
-        print("data ", data)
+        print("Entity name: ", data)
 
         # Getting the current date and time
         dt = datetime.now()
-        counter = tick(latestTime, counter)
-        print("Timestamp-",dt, " Lamport timestamp -", counter)
+        counter_flag = tick(latestTime, counter)
+        print("Timestamp now: ",dt, " Lamport timestamp now: ", counter_flag)
 
         if data:
             print("Welcome ", data)

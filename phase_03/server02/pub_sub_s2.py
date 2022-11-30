@@ -117,27 +117,27 @@ def threadedServerReceiver(connection, data):
     connection.close()
 
 
-# Send to master server
-def threadedMasterSender(ss, counter):
+# Send to primary server
+def threadedPrimarySender(ss, counter):
     while True:
-        flags['master'] = 0
+        flags['primary'] = 0
         # Other server's  are subscribed to the all topics of this server
-        subscriptions['master'] = topics
+        subscriptions['primary'] = topics
         subscriptionInfo = 'Your subscriptions are : ' + \
-            str(subscriptions['master'])
+            str(subscriptions['primary'])
         ss.send(subscriptionInfo.encode())
         val = str(counter) + ' '
         ss.send(val.encode())
 
         while True:
-            if flags['master'] == 1:
-                notify(ss, 'master', val)
+            if flags['primary'] == 1:
+                notify(ss, 'primary', val)
     ss.close()
 
-# Receive from master server
+# Receive from Primary server
 
 
-def threadedMasterReceiver(ss):
+def threadedPrimaryReceiver(ss):
     while True:
         serverData = ss.recv(2048).decode()
         buf = ''
@@ -149,11 +149,11 @@ def threadedMasterReceiver(ss):
             counter = counter + 1
         # Getting the current date and time
         dt = datetime.now()
-        counter = tick(latestTime,counter)
-        print("Timestamp-",dt, " Lamport timestamp -", counter)
+        counter_flag = tick(latestTime,counter)
+        print("Timestamp: ",dt, " Lamport timestamp: ", counter_flag)
 
         if serverData:
-            print("Received from MASTER :", serverData)
+            print("Received from Primary server:", serverData)
             p = serverData.split('-')
             if len(p) == 3:
                 city = p[0]
@@ -178,7 +178,7 @@ def randomSubscriptionGenerator():
 
 def getCity():
     city = random.choice(locations)
-    print("city chosen: " + city)
+    print("City chosen: " + city)
     eventGenerator(city)
 
 ## PUBLISH() and ADVERTIZE()
@@ -191,7 +191,7 @@ def eventGenerator(city):
             topic = random.choice(topics)
             map = mapping[i]
             msgList = map[topic]
-            print("This is msg: ", msgList)
+            print("Message: ", msgList)
             event = msgList[random.choice(list(range(1, len(msgList))))]
 
     # call publish() for publishing the new event
@@ -225,7 +225,7 @@ def publish(topic, event, city, indicator):
                         generatedEvents.setdefault(name, []).append(event)
                     flags[name] = 1
 
-    t = Timer(150, getCity)
+    t = Timer(40, getCity)
     t.start()
 
 
@@ -259,29 +259,27 @@ def Main():
     print("Socket is now listening for new connection ...")
 
     # getCity() will be called in a new thread after 150 seconds
-    t = Timer(150, getCity)
+    t = Timer(40, getCity)
     t.start()
 
-    # connecting with master server
+    # connecting with Primary server
 
-    master_host = os.getenv('SERVER_HOST1')
-    master_port = int(os.getenv('SERVER_PORT1'))
-    # master_host = 'server001' # localhost  # alias of server01 in docker network
-    #master_port =  5029
+    primary_host = os.getenv('SERVER_HOST1')
+    primary_port = int(os.getenv('SERVER_PORT1'))
 
     serverName = str(sys.argv[1])
 
     ss = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ss.connect((master_host, master_port))
+    ss.connect((primary_host, primary_port))
     ss.send(serverName.encode())
 
     # Getting the current date and time
     dt = datetime.now()
     counter = tick(latestTime, 0)
-    print("Timestamp-",dt, " Lamport timestamp -", counter)
+    print("Timestamp: ",dt, " Lamport timestamp: ", counter)
 
-    start_new_thread(threadedMasterReceiver, (ss,))
-    start_new_thread(threadedMasterSender, (ss, counter))
+    start_new_thread(threadedPrimaryReceiver, (ss,))
+    start_new_thread(threadedPrimarySender, (ss, counter))
 
     # An infinity loop - server will be up for infinity and beyond
     while True:
@@ -302,7 +300,7 @@ def Main():
         # Getting the current date and time
         dt = datetime.now()
         counter = tick(latestTime, counter)
-        print("Timestamp-",dt, " Lamport timestamp -", counter)
+        print("Timestamp: ",dt, " Lamport timestamp: ", counter)
 
 
         if data:
