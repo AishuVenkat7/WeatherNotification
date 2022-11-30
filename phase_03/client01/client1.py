@@ -19,7 +19,7 @@ def Main():
     # Getting the current date and time
     dt = datetime.now()
     counter = tick(latestTime, counter)
-    print("Timestamp-",dt, " Lamport timestamp -", counter)
+    print("Timestamp: ",dt, " Lamport timestamp: ", counter)
     subscriberName = str(sys.argv[1])
     subscriptionData = {'subscriberName': subscriberName,
                         'city': 'Santa Clara',
@@ -43,6 +43,7 @@ def Main():
             flag = False
 
         data = s.recv(2048).decode()
+        print("Weather report: ", data)
         # counter = s.recv(2048).decode()
         buf = ''
         try:
@@ -54,7 +55,7 @@ def Main():
         print(data)
         dt = datetime.now()
         counter = tick(latestTime, counter)
-        print("Timestamp-",dt, " Lamport timestamp -", counter)
+        print("Message received at: ",dt, " Lamport timestamp: ", counter)
 
 
 if __name__ == '__main__':
