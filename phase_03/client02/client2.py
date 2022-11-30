@@ -16,7 +16,8 @@ def Main():
     # localhost # alias of server 02 in docker network
     host = os.getenv('SERVER_HOST2')
     port = int(os.getenv('SERVER_PORT2'))
-    subscriberName = str(sys.argv[1])
+    #subscriberName = str(sys.argv[1])
+    subscriberName = os.getenv('CLIENT_NAME')
     counter = 0
     # Getting the current date and time
     dt = datetime.now()
