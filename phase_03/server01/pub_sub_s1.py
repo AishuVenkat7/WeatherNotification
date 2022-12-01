@@ -258,7 +258,7 @@ def Main():
         # Getting the current date and time
         dt = datetime.now()
         counter = tick(latestTime, counter)
-        print("Timestamp now: ",dt, " Lamport timestamp now: ", counter)
+        print("Timestamp: ",dt, " Lamport timestamp: ", counter)
 
         if data:
             print("Welcome ", data)
