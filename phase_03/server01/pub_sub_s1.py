@@ -253,6 +253,7 @@ def Main():
             counter = jsonData['counter']
         except ValueError as err:
             data = clientData
+            counter = 0
 
         print("Entity name: ", data)
 
