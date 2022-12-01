@@ -44,7 +44,7 @@ def Main():
             flag = False
 
         data = s.recv(2048).decode()
-        print("Weather report: ", data)
+        print("Received data: ", data)
         # counter = s.recv(2048).decode()
         buf = ''
         try:
@@ -53,7 +53,7 @@ def Main():
                 counter = int(buf)
         except ValueError:
             counter = counter + 1
-        print(data)
+        # print(data)
         dt = datetime.now()
         counter = tick(latestTime,counter)
         print("Message received at: ",dt, " Lamport timestamp: ", counter)
