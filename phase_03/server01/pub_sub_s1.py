@@ -13,10 +13,9 @@ from threading import Timer
 
 # Global variables
 
+counter = 0
 clientList = []
-
 locations = ['Santa Clara', 'San Francisco', 'Dallas']
-
 all_topics = ['Hourly', 'Daily', 'Weekly', 'Warning']
 
 # server1's responsibility is generate events of these topics
@@ -56,7 +55,7 @@ mapping = {
     "Dallas": DallasDetails
 }
 
-counter = 0
+
 latestTime = 0
 
 def tick(latestTime, requestTime):
@@ -122,8 +121,8 @@ def threadedServerReceiver(connection, jsonData):
             counter = counter + 1
         # Getting the current date and time
         dt = datetime.now()
-        counter_flag = tick(latestTime, counter)
-        print("Timestamp: ",dt, " Lamport timestamp: ", counter_flag)
+        counter = tick(latestTime, counter)
+        print("Timestamp: ",dt, " Lamport timestamp: ", counter)
 
         m = serverData.split('-')
         if len(m) == 3:
@@ -202,7 +201,7 @@ def publish(topic, event, city, indicator):
 def notify(connection, name, val):
     if name in generatedEvents.keys():
         for msg in generatedEvents[name]:
-            msg = msg  # + str("\n")
+            msg = "Weather report: " + msg  # + str("\n")
             connection.send(msg.encode())  #sending the weather msg
             connection.send(val.encode())  #sending lamport timestamp
         del generatedEvents[name]
@@ -259,8 +258,8 @@ def Main():
 
         # Getting the current date and time
         dt = datetime.now()
-        counter_flag = tick(latestTime, counter)
-        print("Timestamp now: ",dt, " Lamport timestamp now: ", counter_flag)
+        counter = tick(latestTime, counter)
+        print("Timestamp: ",dt, " Lamport timestamp: ", counter)
 
         if data:
             print("Welcome ", data)

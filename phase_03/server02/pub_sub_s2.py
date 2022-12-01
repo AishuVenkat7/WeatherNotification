@@ -149,8 +149,8 @@ def threadedPrimaryReceiver(ss):
             counter = counter + 1
         # Getting the current date and time
         dt = datetime.now()
-        counter_flag = tick(latestTime,counter)
-        print("Timestamp: ",dt, " Lamport timestamp: ", counter_flag)
+        counter = tick(latestTime,counter)
+        print("Timestamp: ",dt, " Lamport timestamp: ", counter)
 
         if serverData:
             print("Received from Primary server:", serverData)
@@ -232,7 +232,7 @@ def publish(topic, event, city, indicator):
 def notify(connection, name, val):
     if name in generatedEvents.keys():
         for msg in generatedEvents[name]:
-            msg = msg  # + str("\n")
+            msg = "Weather report: " + msg  # + str("\n")
             connection.send(msg.encode())
             connection.send(val.encode())
         del generatedEvents[name]
