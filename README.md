@@ -3,7 +3,7 @@
 Publish/Subscribe (or pub/sub for short) is a popular **indirect** communication system. `Pub/sub` systems disseminates events to multiple recipients (called subscribers) through an intermediary. Examples of successful pub/sub include `Twitter` and `Bloomberg terminal`-like financial systems. In this project, we will emulate a pub/sub system using `Docker` which is a computer program that performs operating-system-level virtualization, also known as "containerization".
 
 # How to run phase-02 
-`(Distributed Publisher/Subscriber System with a Central Server)`
+`(Distributed Publisher/Subscriber System)`
 
 First go the `phase_02` directory. Then run the below commands:
 
